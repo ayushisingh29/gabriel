@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 #
 # Cloudlet Infrastructure for Mobile Computing
 #
@@ -73,6 +73,15 @@ class MJPEGStreamHandler(BaseHTTPRequestHandler, object):
                 f = open(curdir + sep + self.path)
                 self.send_response(200)
                 self.send_header('Content-type', 'image/jpeg')
+                self.end_headers()
+                self.wfile.write(f.read())
+                f.close()
+                return
+
+            if self.path.endswith(".wav"):
+                f = open(curdir + sep + self.path)
+                self.send_response(200)
+                self.send_header('Content-type', 'audio/wav')
                 self.end_headers()
                 self.wfile.write(f.read())
                 f.close()
