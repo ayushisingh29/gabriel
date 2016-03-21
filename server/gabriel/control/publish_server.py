@@ -74,6 +74,34 @@ class VideoPublishHandler(SensorPublishHandler):
         super(VideoPublishHandler, self).terminate()
 
 
+class AudioPublishHandler(SensorPublishHandler):
+    def setup(self):
+        super(AudioPublishHandler, self).setup()
+        self.data_queue = multiprocessing.Queue(gabriel.Const.MAX_FRAME_SIZE)
+        gabriel.control.audio_queue_list.append(self.data_queue)
+
+    def __repr__(self):
+        return "Audio Publish Server"
+
+    def handle(self):
+        LOG.info("New offloading engine connected to audio stream")
+        super(AudioPublishHandler, self).handle()
+
+    def _handle_queue_data(self):
+        try:
+            (header_data, audio_data) = self.data_queue.get(timeout = 0.0001)
+            packet = struct.pack("!II%ds%ds" %(len(header_data), len(audio_data)),
+                    len(header_data), len(audio_data), header_data, audio_data)
+            self.request.send(packet)
+            self.wfile.flush()
+        except Queue.Empty as e:
+            pass
+
+    def terminate(self):
+        LOG.info("Offloading engine disconnected from audio stream")
+        gabriel.control.audio_queue_list.remove(self.data_queue)
+        super(AudioPublishHandler, self).terminate()
+
 ## TODO
 class AccPublishHandler(SensorPublishHandler):
     def setup(self):

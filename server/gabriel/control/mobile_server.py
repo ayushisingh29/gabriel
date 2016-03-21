@@ -38,6 +38,7 @@ import gabriel
 LOG = gabriel.logging.getLogger(__name__)
 
 image_queue_list = list()
+audio_queue_list = list()
 acc_queue_list = list()
 gps_queue_list = list()
 # a global queue that contains final messages sent back to the client
@@ -61,6 +62,49 @@ class MobileSensorHandler(gabriel.network.CommonHandler):
             self.init_connect_time = time.time()
             self.previous_time = time.time()
         super(MobileSensorHandler, self).handle()
+
+class MobileAudioHandler(MobileSensorHandler):
+    def setup(self):
+        super(MobileAudioHandler, self).setup()
+        # other specific setup
+
+    def __repr__(self):
+        return "Mobile Audio Server"
+
+    def _handle_input_data(self):
+        ## receive data
+        header_size = struct.unpack("!I", self._recv_all(4))[0]
+        header_data = self._recv_all(header_size)
+        header_json = json.loads(header_data)
+
+        # if "sync_time" field exists in the header, then this is a time sync request
+        # and a local time is returned immediately
+        if header_json.get("sync_time") is not None:
+            header_json["sync_time"] = int(time.time() * 1000) # in millisecond
+            header_data = json.dumps(header_json)
+            packet = struct.pack("!I%ds" % len(header_data),
+                    len(header_data), header_data)
+            self.request.send(packet)
+            self.wfile.flush()
+            return
+
+        # Normal packet with WAV data
+        audio_size = struct.unpack("!I", self.__recv_all(4))[0]
+        audio_data = self.__recv_all(audio_size)
+
+        if gabriel.Debug.TIME_MEASUREMENT:
+            header_json[gabriel.Protocol_measurement.JSON_KEY_CONTROL_RECV_FROM_MOBILE_TIME] = time.time()
+            header_data = json.dumps(header_json)
+
+
+        for audio_queue in audio_queue_list:
+            if audio_queue.full():
+                try:
+                    audio_queu.get_nowait()
+                except Queue.Empty as e:
+                    pass
+            audio_queue.put((header_data, image_data))
+
 
 
 class MobileVideoHandler(MobileSensorHandler):
