@@ -322,27 +322,35 @@ def main():
     video_thread = threading.Thread(target=video_server.serve_forever)
     video_thread.daemon = True
 
+    audio_server = MobileCommServer(gabriel.Const.MOBILE_SERVER_AUDIO_PORT, MobileAudioHandler)
+    audio_thread = threading.Thread(target=audio_server.serve_forever)
+    audio_thread.daemon = True
+
     #acc_server = MobileCommServer(gabriel.Const.MOBILE_SERVER_ACC_PORT, MobileVideoHandler)
     #acc_thread = threading.Thread(target=acc_server.serve_forever)
     #acc_thread.daemon = True
 
     try:
         video_thread.start()
+        audio_thread.start()
         #acc_thread.start()
         while True:
             time.sleep(100)
     except KeyboardInterrupt as e:
         sys.stdout.write("Exit by user\n")
         video_server.terminate()
+        audio_server.terminate()
         #acc_server.terminate()
         sys.exit(1)
     except Exception as e:
         sys.stderr.write(str(e))
         video_server.terminate()
+        audio_server.terminate()
         #acc_server.terminate()
         sys.exit(1)
     else:
         video_server.terminate()
+        audio_server.terminate()
         #acc_server.terminate()
         sys.exit(0)
 
