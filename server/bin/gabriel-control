@@ -40,7 +40,7 @@ LOG = gabriel.logging.getLogger(__name__)
 REST_server = gabriel.network.RESTServer()
 UPnP_server = gabriel.network.UPnPServer()
 service_monitor = gabriel.control.OffloadingEngineMonitor(gabriel.control.image_queue_list,
-        gabriel.control.acc_queue_list, gabriel.control.gps_queue_list, gabriel.control.result_queue)
+        gabriel.control.acc_queue_list, gabriel.control.gps_queue_list, gabriel.control.audio_queue_list, gabriel.control.result_queue)
 
 
 def process_command_line(argv):
@@ -202,10 +202,9 @@ def main():
     else:
         m_video_server = gabriel.control.MobileCommServer(gabriel.Const.MOBILE_SERVER_VIDEO_PORT, gabriel.control.MobileVideoHandler)
     m_acc_server = gabriel.control.MobileCommServer(gabriel.Const.MOBILE_SERVER_ACC_PORT, gabriel.control.MobileAccHandler)
+    m_audio_server = gabriel.control.MobileCommServer(gabriel.Const.MOBILE_SERVER_AUDIO_PORT, gabriel.control.MobileAudioHandler)
     m_result_server = gabriel.control.MobileCommServer(gabriel.Const.MOBILE_SERVER_RESULT_PORT, gabriel.control.MobileResultHandler)
     ucomm_relay_server = gabriel.control.UCommRelayServer(gabriel.Const.UCOMM_COMMUNICATE_PORT, gabriel.control.UCommRelayHandler)
-
-        m_audio_server = gabriel.control.MobileCommServer(gabriel.Const.MOBILE_SERVER_AUDIO_PORT, gabriel.control.MobileAudioHandler)
 
     ## publish servers that publish sensor streams to offloading engines (start with p_)
     p_video_server = gabriel.control.SensorPublishServer(gabriel.Const.PUBLISH_SERVER_VIDEO_PORT, gabriel.control.VideoPublishHandler)

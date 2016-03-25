@@ -149,20 +149,23 @@ class SensorPublishServer(gabriel.network.CommonServer):
 
 ## TODO
 class OffloadingEngineMonitor(threading.Thread):
-    def __init__(self, v_queuelist, a_queuelist, g_queuelist, result_queue):
+    def __init__(self, v_queuelist, a_queuelist, g_queuelist, au_queuelist, result_queue):
         self.stop = threading.Event()
         threading.Thread.__init__(self, target=self.monitor)
         self.v_queuelist = v_queuelist
         self.a_queuelist = a_queuelist
         self.g_queuelist = g_queuelist
+        self.au_queuelist = au_queuelist
         self.result_queue = result_queue
 
         self.count_prev_video_app = 0
         self.count_prev_acc_app = 0
         self.count_prev_gps_app = 0
+        self.count_prev_audio_app = 0
         self.count_cur_video_app = 0
         self.count_cur_acc_app = 0
         self.count_cur_gps_app = 0
+        self.count_cur_audio_app = 0
 
     def _inject_token(self):
         '''
@@ -180,13 +183,16 @@ class OffloadingEngineMonitor(threading.Thread):
             self.count_cur_video_app = len(self.v_queuelist)
             self.count_cur_acc_app = len(self.a_queuelist)
             self.count_cur_gps_app = len(self.g_queuelist)
+            self.count_cur_audio_app = len(self.au_queuelist)
 
             if (self.count_prev_video_app == 0 and self.count_cur_video_app > 0) or \
                     (self.count_prev_acc_app == 0 and self.count_cur_acc_app > 0) or \
+                    (self.count_prev_audio_app == 0 and self.count_cur_audio_app > 0) or \
                     (self.count_prev_gps_app == 0 and self.count_cur_gps_app > 0):
                 self._inject_token()
             self.count_prev_video_app = self.count_cur_video_app
             self.count_prev_acc_app = self.count_cur_acc_app
+            self.count_prev_audio_app = self.count_cur_audio_app
             self.count_prev_gps_app = self.count_cur_gps_app
 
     def terminate(self):

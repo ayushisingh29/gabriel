@@ -89,8 +89,8 @@ class MobileAudioHandler(MobileSensorHandler):
             return
 
         # Normal packet with WAV data
-        audio_size = struct.unpack("!I", self.__recv_all(4))[0]
-        audio_data = self.__recv_all(audio_size)
+        audio_size = struct.unpack("!I", self._recv_all(4))[0]
+        audio_data = self._recv_all(audio_size)
 
         if gabriel.Debug.TIME_MEASUREMENT:
             header_json[gabriel.Protocol_measurement.JSON_KEY_CONTROL_RECV_FROM_MOBILE_TIME] = time.time()

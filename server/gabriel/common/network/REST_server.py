@@ -150,6 +150,8 @@ class GabrielInfo(Resource):
             gabriel.ServiceMeta.UCOMM_SERVER_PORT: None,
             gabriel.ServiceMeta.VIDEO_TCP_STREAMING_IP: str(ip_addr),
             gabriel.ServiceMeta.VIDEO_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_VIDEO_PORT),
+            gabriel.ServiceMeta.AUDIO_TCP_STREAMING_IP: str(ip_addr),
+            gabriel.ServiceMeta.AUDIO_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_ACC_PORT),
             gabriel.ServiceMeta.ACC_TCP_STREAMING_IP: str(ip_addr),
             gabriel.ServiceMeta.ACC_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_ACC_PORT),
             gabriel.ServiceMeta.UCOMM_RELAY_IP: str(ip_addr),
