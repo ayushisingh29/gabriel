@@ -6,37 +6,38 @@ import java.io.IOException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.cmu.cs.gabriel.token.TokenController;
-
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import edu.cmu.cs.gabriel.token.TokenController;
 
 public class AudioControlThread extends Thread {
-	private static final String LOG_TAG = "Audio Control";
-	
-	private Handler networkHandler;
-	TokenController tokenController;
-	private DataInputStream networkReader;
-	private boolean is_running = true;
-	
-	public AudioControlThread(DataInputStream dataInputStream, Handler networkHandler, TokenController tokenController) {
-		this.networkReader = dataInputStream;
-		this.networkHandler = networkHandler;
-		this.tokenController = tokenController;
-	}
+    private static final String LOG_TAG = "Audio Control";
+
+    private Handler networkHandler;
+    TokenController tokenController;
+    private DataInputStream networkReader;
+    private boolean is_running = true;
+
+    public AudioControlThread(DataInputStream dataInputStream,
+            Handler networkHandler, TokenController tokenController) {
+        this.networkReader = dataInputStream;
+        this.networkHandler = networkHandler;
+        this.tokenController = tokenController;
+    }
 
     @Override
     public void run() {
         // Recv initial simulation information
-        while(is_running == true){
+        while (is_running == true) {
             try {
                 String recvMsg = this.receiveMsg(networkReader);
                 this.notifyReceivedData(recvMsg);
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.toString());
-                // Do not send error to handler, Streaming thread already sent it.
-//              this.notifyError(e.getMessage());
+                // Do not send error to handler, Streaming thread already sent
+                // it.
+                // this.notifyError(e.getMessage());
                 break;
             } catch (JSONException e) {
                 Log.e(LOG_TAG, e.toString());
@@ -45,14 +46,13 @@ public class AudioControlThread extends Thread {
         }
     }
 
-
     private String receiveMsg(DataInputStream reader) throws IOException {
         int retLength = reader.readInt();
         byte[] recvByte = new byte[retLength];
         int readSize = 0;
-        while(readSize < retLength){
-            int ret = reader.read(recvByte, readSize, retLength-readSize);
-            if(ret <= 0){
+        while (readSize < retLength) {
+            int ret = reader.read(recvByte, readSize, retLength - readSize);
+            if (ret <= 0) {
                 break;
             }
             readSize += ret;
@@ -67,10 +67,11 @@ public class AudioControlThread extends Thread {
         String controlMsg = null;
         obj = new JSONObject(recvData);
 
-        try{
+        try {
             controlMsg = obj.getString(NetworkProtocol.HEADER_MESSAGE_CONTROL);
-        } catch(JSONException e){}
-        if (controlMsg != null){
+        } catch (JSONException e) {
+        }
+        if (controlMsg != null) {
             Message msg = Message.obtain();
             msg.what = NetworkProtocol.NETWORK_RET_CONFIG;
             msg.obj = controlMsg;
@@ -88,7 +89,7 @@ public class AudioControlThread extends Thread {
     public void close() {
         this.is_running = false;
         try {
-            if(this.networkReader != null)
+            if (this.networkReader != null)
                 this.networkReader.close();
         } catch (IOException e) {
         }
