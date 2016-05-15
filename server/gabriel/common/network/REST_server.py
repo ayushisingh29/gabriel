@@ -144,14 +144,14 @@ class ManageService(Resource):
 class GabrielInfo(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('task', type = str)
-    ip_addr = gabriel.network.get_ip("eth0")
+    ip_addr = gabriel.network.get_ip("en0")
     service_info = {
             gabriel.ServiceMeta.UCOMM_SERVER_IP: None,
             gabriel.ServiceMeta.UCOMM_SERVER_PORT: None,
             gabriel.ServiceMeta.VIDEO_TCP_STREAMING_IP: str(ip_addr),
             gabriel.ServiceMeta.VIDEO_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_VIDEO_PORT),
             gabriel.ServiceMeta.AUDIO_TCP_STREAMING_IP: str(ip_addr),
-            gabriel.ServiceMeta.AUDIO_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_ACC_PORT),
+            gabriel.ServiceMeta.AUDIO_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_AUDIO_PORT),
             gabriel.ServiceMeta.ACC_TCP_STREAMING_IP: str(ip_addr),
             gabriel.ServiceMeta.ACC_TCP_STREAMING_PORT: int(gabriel.Const.PUBLISH_SERVER_ACC_PORT),
             gabriel.ServiceMeta.UCOMM_RELAY_IP: str(ip_addr),

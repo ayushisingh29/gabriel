@@ -1,0 +1,355 @@
+#!/usr/bin/env python
+#
+# Cloudlet Infrastructure for Mobile Computing
+#
+#   Author: Kiryong Ha <krha@cmu.edu>
+#           Zhuo Chen <zhuoc@cs.cmu.edu>
+#
+#   Copyright (C) 2011-2013 Carnegie Mellon University
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+import multiprocessing
+import Queue
+from optparse import OptionParser
+import os
+import pprint
+import struct
+import sys
+import time
+import wave
+import pyaudio
+import numpy
+import subprocess
+
+from textblob import TextBlob
+
+import time
+
+if os.path.isdir("../gabriel"):
+    sys.path.insert(0, "..")
+import gabriel
+import gabriel.proxy
+import speech_recognition as sr
+LOG = gabriel.logging.getLogger(__name__)
+
+from os import path
+
+
+def translate_subpart(string, lang_direction):
+    """Simple translate for just a certin string"""
+
+    for codes in lang_direction.split("/"):
+        translater = subprocess.Popen(['apertium', '-u', '-f', 'html', codes], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        translater.stdin.write(string.encode("utf8")+"\n")
+        string, _ = translater.communicate()
+        string = string[:-1].decode("utf8")
+
+    return string
+
+
+def process_command_line(argv):
+    VERSION = 'gabriel proxy : %s' % gabriel.Const.VERSION
+    DESCRIPTION = "Gabriel cognitive assistance"
+
+    parser = OptionParser(usage='%prog [option]', version=VERSION,
+            description=DESCRIPTION)
+
+    parser.add_option(
+            '-s', '--address', action='store', dest='address',
+            help="(IP address:port number) of directory server")
+    settings, args = parser.parse_args(argv)
+    if len(args) >= 1:
+        parser.error("invalid arguement")
+
+    if hasattr(settings, 'address') and settings.address is not None:
+        if settings.address.find(":") == -1:
+            parser.error("Need address and port. Ex) 10.0.0.1:8081")
+    return settings, args
+
+
+class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
+
+    accumulated_size = 0
+    wav_file = None
+    file_count = 0
+    file_size = 0
+    file_size_limit = 640000
+    p = pyaudio.PyAudio()
+    stream = p.open(format=p.get_format_from_width(2),
+                    channels=1,
+                    rate=16000,
+                    output=True)
+    wavType = numpy.dtype((numpy.int16, 1))
+    applause = False
+    cfSum = 0
+    cfCount = 0
+    recordingWav = False
+    wavName = "tmp.wav"
+    result = ""
+    gResult = ""
+    rmsList = []
+    rmsMax = 40
+    rtime = 0
+    ttime = 0
+
+    def handle(self, header, data):
+        # PERFORM Cognitive Assistance Processing
+        LOG.info("processing: ")
+        LOG.info("%s\n" % header)
+
+        #################### Save as wave file ####################
+        # if (self.file_size == 0):
+        #     file_name = "record%d.wav" %self.file_count
+        #     WAV_FILE = path.join(path.dirname(path.realpath(__file__)), file_name)
+        #     self.wav_file = wave.open(WAV_FILE, "wb")
+        #     self.wav_file.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+
+        # self.accumulated_size += len(data)
+        # self.file_size += len(data)
+        # if (self.wav_file != None):
+        #     self.wav_file.writeframes(data)
+
+        # if(self.file_size > self.file_size_limit):
+        #     self.wav_file.close()
+        #     self.wav_file = None
+        #     self.file_size = 0
+        #     self.file_count += 1
+        #################### Save as wave file ####################
+
+        ################# Play the recieved audio #################
+        # self.stream.write(data)
+        ################# Play the recieved audio #################
+
+        ######### Applause recognition using crest factor #########
+        # applause cf: 0.0113089790373
+        # talk cf:     0.0290721972648
+        # wavData = numpy.frombuffer(data, dtype = self.wavType)
+        # freqDomainData = numpy.fft.fft(wavData)
+        # magnitudeSpectrum = numpy.absolute(freqDomainData) / (len(freqDomainData) * 0.5)
+        # totalSpectralPow = magnitudeSpectrum.sum()
+        # crestFactor = magnitudeSpectrum.max()/ totalSpectralPow
+        # # self.cfSum += crestFactor
+        # # self.cfCount += 1
+
+        # if (not self.applause):
+        #     # talking
+        #     if (crestFactor < 0.008):
+        #         self.applause = True
+        # else:
+        #     # applause
+        #     if (crestFactor > 0.030):
+        #         self.applause = False
+
+        # state = ""
+        # if (self.applause):
+        #     state = "Applause"
+        # else:
+        #     state = "Talking"
+        # print("state: " + state + " | crest factor: " + str(crestFactor))
+        ######### Applause recognition using crest factor #########
+
+        ################## Midi note extraction ###################
+        # """
+        # write data out to the audio stream
+        # unpack the data and times by the hamming window
+        # """
+        # indata = numpy.frombuffer(data, dtype = self.wavType)
+        # indata = numpy.array(wave.struct.unpack("%dh"%(len(data)/2),\
+        #                                      data))
+
+        # # Take the fft and square each value
+        # fftData = abs(numpy.fft.rfft(indata))**2
+        # # find the maximum
+        # which = fftData[1:].argmax() + 1
+        # # use quadratic interpolation around the max
+        # if which != len(fftData)-1:
+        #     y0,y1,y2 = numpy.log(fftData[which-1:which+2:])
+        #     x1 = (y2 - y0) * .5 / (2 * y1 - y2 - y0)
+        #     # find the frequency and output it
+        #     thefreq = (which+x1)*16000/(len(data)/2)
+        #     d=69+(12*numpy.log(float(thefreq)/440))/(numpy.log(2))
+        #     print "The freq is %f Hz." % (thefreq)
+        #     print "The midi note is %d." %(d)
+        # else:
+        #     thefreq = which*RATE/chunk
+        #     d=69+(12*numpy.log(float(thefreq)/440))/(numpy.log(2))
+        #     print "The freq is %f Hz." % (thefreq)
+        #     print "The midi note is %d." %(d)
+        ################## Midi note extraction ###################
+
+        ################## Real time translation ##################
+        indata = numpy.array(wave.struct.unpack("%dh"%(len(data)/2),\
+                                             data))
+        timedata = numpy.frombuffer(data, dtype = self.wavType)
+        rms = numpy.sqrt(numpy.mean(numpy.square(indata)))
+        # print "Noise level %f" %(rms)
+        threshold = 400
+        threshold_low = 90
+
+        file_name = self.wavName
+        WAV_FILE = path.join(path.dirname(path.realpath(__file__)), file_name)
+
+
+        if (self.recordingWav):
+            self.wav_file.writeframes(data)
+            if (len(self.rmsList) == self.rmsMax):
+                self.rmsList.pop(0)
+            self.rmsList.append(rms);
+
+        if (rms > threshold):
+            if (not self.recordingWav):
+                self.rmsList = []
+                self.rmsList.append(rms)
+                self.recordingWav = True
+                self.wav_file = wave.open(WAV_FILE, "wb")
+                self.wav_file.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+                self.wav_file.writeframes(data)
+        else:
+            if (self.recordingWav) and (len(self.rmsList) > (self.rmsMax / 2)) and (len(filter(lambda x:x < threshold_low, self.rmsList)) > (self.rmsMax * 2 / 3)):
+
+            # if (self.recordingWav) and (len(self.rmsList) > (self.rmsMax / 2)) and (reduce(lambda x, y: x+y, self.rmsList) > threshold_low * self.rmsMax):
+                self.recordingWav = False
+                self.wav_file.close()
+
+                r = sr.Recognizer()
+                with sr.WavFile(WAV_FILE) as source:
+                    audio = r.record(source) # read the entire WAV file
+
+                try:
+
+                    start = time.time()
+                    ### Sphinx
+                    self.result = r.recognize_sphinx(audio)
+                    ### Google
+                    # self.result = r.recognize_google(audio)
+                    end = time.time()
+                    self.rtime = (end-start)
+                    start = time.time()
+                    #### Apertium ###
+                    self.gResult = translate_subpart(self.result, "en-es")
+
+                    # blob = TextBlob(self.result);
+                    # blob = blob.translate(to='es')
+                    # self.gResult = str(blob)
+
+                    ### Google ####
+                    end = time.time()
+                    self.ttime = (end-start)
+                except sr.UnknownValueError:
+                    return "nothing"
+                except sr.RequestError as e:
+                    return "nothing"
+
+        print("Result: " + self.result)
+        print("Translated: " + self.gResult)
+        print("Time for recognition: " + str(self.rtime))
+        print("Time for translation: " + str(self.ttime))
+        # print("G: " + self.gResult)
+
+        ################## Real time translation ##################
+
+
+
+
+
+        # print("audio size " + str(len(data)) + "| accumulated_size " + str(self.accumulated_size) + "| crest factor: " + str(crestFactor) + "| avg cf: " + str(self.cfSum / self.cfCount))
+        return "nothing"
+        # return "audioaudioaudio"
+        # return "dummy"
+        # return "audio size" + str(len(data))
+
+    def terminate(self):
+        if (self.stream is not None):
+            self.stream.stop_stream()
+            self.stream.close()
+            self.p.terminate()
+
+        gabriel.proxy.CognitiveProcessThread.terminate(self)
+
+
+#class DummyAccApp(AppProxyThread):
+#    def chunks(self, l, n):
+#        for i in xrange(0, len(l), n):
+#            yield l[i:i + n]
+#
+#    def handle(self, header, acc_data):
+#        ACC_SEGMENT_SIZE = 16# (int, float, float, float)
+#        for chunk in self.chunks(acc_data, ACC_SEGMENT_SIZE):
+#            (acc_time, acc_x, acc_y, acc_z) = struct.unpack("!ifff", chunk)
+#            print "time: %d, acc_x: %f, acc_y: %f, acc_x: %f" % \
+#                    (acc_time, acc_x, acc_y, acc_z)
+#        return None
+
+
+if __name__ == "__main__":
+    result_queue = multiprocessing.Queue()
+    print result_queue._reader
+
+    settings, args = process_command_line(sys.argv[1:])
+    ip_addr, port = gabriel.network.get_registry_server_address(settings.address)
+    service_list = gabriel.network.get_service_list(ip_addr, port)
+    LOG.info("Gabriel Server :")
+    LOG.info(pprint.pformat(service_list))
+
+    video_ip = service_list.get(gabriel.ServiceMeta.AUDIO_TCP_STREAMING_IP)
+    video_port = service_list.get(gabriel.ServiceMeta.AUDIO_TCP_STREAMING_PORT)
+    #acc_ip = service_list.get(SERVICE_META.ACC_TCP_STREAMING_IP)
+    #acc_port = service_list.get(SERVICE_META.ACC_TCP_STREAMING_PORT)
+    ucomm_ip = service_list.get(gabriel.ServiceMeta.UCOMM_SERVER_IP)
+    ucomm_port = service_list.get(gabriel.ServiceMeta.UCOMM_SERVER_PORT)
+
+    # image receiving and processing threads
+    audio_queue = Queue.Queue(gabriel.Const.APP_LEVEL_TOKEN_SIZE)
+    print "TOKEN SIZE OF OFFLOADING ENGINE: %d" % gabriel.Const.APP_LEVEL_TOKEN_SIZE # TODO
+    video_receive_client = gabriel.proxy.SensorReceiveClient((video_ip, video_port), audio_queue)
+    video_receive_client.start()
+    video_receive_client.isDaemon = True
+    dummy_video_app = DummyVideoApp(audio_queue, result_queue, engine_id = 'dummy') # dummy app for image processing
+    dummy_video_app.start()
+    dummy_video_app.isDaemon = True
+
+    # dummy acc app
+    #acc_client = None
+    #acc_app = None
+    #acc_queue = Queue.Queue(1)
+    #acc_client = AppProxyStreamingClient((acc_ip, acc_port), acc_queue)
+    #acc_client.start()
+    #acc_client.isDaemon = True
+    #acc_app = DummyAccApp(acc_queue, result_queue)
+    #acc_app.start()
+    #acc_app.isDaemon = True
+
+    # result publish
+    result_pub = gabriel.proxy.ResultPublishClient((ucomm_ip, ucomm_port), result_queue)
+    result_pub.start()
+    result_pub.isDaemon = True
+
+    try:
+        while True:
+            time.sleep(1)
+    except Exception as e:
+        pass
+    except KeyboardInterrupt as e:
+        sys.stdout.write("user exits\n")
+    finally:
+        if video_receive_client is not None:
+            video_receive_client.terminate()
+        if dummy_video_app is not None:
+            dummy_video_app.terminate()
+        #if acc_client is not None:
+        #    acc_client.terminate()
+        #if acc_app is not None:
+        #    acc_app.terminate()
+        result_pub.terminate()
+

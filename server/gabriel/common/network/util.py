@@ -27,7 +27,7 @@ import urllib2
 import gabriel
 
 
-def get_ip(iface = 'eth0'):
+def get_ip(iface = 'en0'):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sockfd = sock.fileno()
     SIOCGIFADDR = 0x8915
@@ -36,8 +36,9 @@ def get_ip(iface = 'eth0'):
     try:
         res = fcntl.ioctl(sockfd, SIOCGIFADDR, ifreq)
     except:
-        return None
+        return "127.0.0.1"
     ip = struct.unpack('16sH2x4s8x', res)[2]
+
     return socket.inet_ntoa(ip)
 
 

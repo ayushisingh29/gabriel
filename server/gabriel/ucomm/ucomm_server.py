@@ -57,6 +57,7 @@ class UCommServerHandler(gabriel.network.CommonHandler):
     def _handle_input_data(self):
         rtn_size = struct.unpack("!I", self._recv_all(4))[0]
         rtn_data = self._recv_all(rtn_size)
+        print("rtn data %s" %rtn_data)
         rtn_json = json.loads(rtn_data)
 
         # check if engine id is provided

@@ -100,10 +100,10 @@ class MobileAudioHandler(MobileSensorHandler):
         for audio_queue in audio_queue_list:
             if audio_queue.full():
                 try:
-                    audio_queu.get_nowait()
+                    audio_queue.get_nowait()
                 except Queue.Empty as e:
                     pass
-            audio_queue.put((header_data, image_data))
+            audio_queue.put((header_data, audio_data))
 
 
 
