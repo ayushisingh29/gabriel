@@ -34,8 +34,6 @@ import subprocess
 
 from textblob import TextBlob
 
-import time
-
 if os.path.isdir("../gabriel"):
     sys.path.insert(0, "..")
 import gabriel
